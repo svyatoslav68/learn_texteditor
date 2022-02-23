@@ -13,6 +13,8 @@ class QMenu;
 class QWidget;
 class TNewTextEdit;
 class QPushButton;
+class QTextDocument;
+class QPrinter;
 
 class MainWindow: public QMainWindow {
 Q_OBJECT
@@ -24,9 +26,11 @@ public:
 private:
 	void createActions();
 	void createMenu();
+	bool exportToPdf(QString &fileName, QTextDocument *document);
+	void print(QPrinter *printer);
 	QWidget *centralWidget;
 	QPushButton *pushButtonOk, *pushButtonSave, *pushButtonOpen;
-	QAction *actOpen, *actSave, *actReadOnly, *actExit;
+	QAction *actOpen, *actSave, *actReadOnly, *actPrint, *actExit;
 	QAction *actViewLight, *actViewDark;
 	QAction *actEnglish, *actRussian;
 	QAction *actHelp, *actAboutQt, *actAbout;
@@ -38,6 +42,7 @@ private slots:
 	void onSelectStyle(STYLE);
 	void onOpenFile();
 	void onSaveFile();
+	void onPrintFile();
 	void onReadOnly();
 	void onAbout();
 	void onAboutQt();
