@@ -11,6 +11,8 @@ class QAction;
 class QActionGroup;
 class QMenu;
 class QWidget;
+class QMdiSubWindow;
+class QMdiArea;
 class TNewTextEdit;
 class QPushButton;
 class QTextDocument;
@@ -29,8 +31,10 @@ private:
 	bool exportToPdf(QString &fileName, QTextDocument *document);
 	void print(QPrinter *printer);
 	QWidget *centralWidget;
+	QMdiArea *mdiArea;
 	QPushButton *pushButtonOk, *pushButtonSave, *pushButtonOpen;
 	QAction *actOpen, *actSave, *actReadOnly, *actPrint, *actExit;
+	QAction *actNewSubWindow;
 	QAction *actViewLight, *actViewDark;
 	QAction *actEnglish, *actRussian;
 	QAction *actHelp, *actAboutQt, *actAbout;
@@ -40,6 +44,7 @@ private:
 private slots:
 	void onSelectLanguages(LANGUAGE_INTERFACE);
 	void onSelectStyle(STYLE);
+	void onNewSubWindow();
 	void onOpenFile();
 	void onSaveFile();
 	void onPrintFile();

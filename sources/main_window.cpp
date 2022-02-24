@@ -2,6 +2,7 @@
 ***** Файл реализации главного окна приложения ****************
 *****       main_window.cpp                    ****************
 **************************************************************/
+#include <iostream>
 #include <QWidget>
 #include <QMainWindow>
 #include <QMenu>
@@ -19,6 +20,8 @@
 #include <QPrintDialog>
 #include <QTextDocument>
 #include <QStringList>
+#include <QMdiArea>
+#include <QMdiSubWindow>
 #include <QDebug>
 #include "version.hpp"
 #include "new_text_edit.hpp"
@@ -30,6 +33,7 @@ MainWindow::MainWindow()
 {
 	setObjectName("MainWindow");
 	setWindowTitle("Text editor");
+	mdiArea = new QMdiArea(this);
 	pushButtonOk = new QPushButton(tr("Ok"), this);
 	connect(pushButtonOk, &QPushButton::clicked, this, &QMainWindow::close); 
 	pushButtonSave = new QPushButton(tr("Save"), this);
@@ -46,13 +50,16 @@ MainWindow::MainWindow()
 	textEditMain->setObjectName("textEditMain");
 	connect(textEditMain, &TNewTextEdit::signalOpenFile, this, &MainWindow::onOpenFile);
 	connect(textEditMain, &TNewTextEdit::signalSaveFile, this, &MainWindow::onSaveFile);
-	mainLayout->addWidget(textEditMain);
+	mainLayout->addWidget(mdiArea);
+	mdiArea->addSubWindow(textEditMain);
 	mainLayout->addLayout(bottomLayout);
 	centralWidget = new QWidget(this);
 	centralWidget->setLayout(mainLayout);
 	setCentralWidget(centralWidget);
 	createActions();
 	createMenu();
+	// Если вызываю метод из конструктора, то окно добавляется
+	//onNewSubWindow();
 }
 
 MainWindow::~MainWindow()
@@ -77,6 +84,9 @@ void MainWindow::createActions()
 	actExit->setObjectName("actExit");
 	actExit->setShortcut(QKeySequence::Quit);
 	connect(actExit, &QAction::triggered, this, &QMainWindow::close);
+	actNewSubWindow = new QAction(tr("New subwindow"), this);
+	actNewSubWindow->setObjectName("actNewSubWindow");
+	connect(actNewSubWindow, &QAction::triggered, this, &MainWindow::onNewSubWindow);
 	grpLanguages = new QActionGroup(this);
 	actEnglish = new QAction(tr("&English"));
 	actEnglish->setObjectName("actEnglish");
@@ -117,6 +127,8 @@ void MainWindow::createMenu()
 	menuFile->addAction(actSave);
 	menuFile->addAction(actReadOnly);
 	menuFile->addAction(actPrint);
+	menuFile->addSeparator();
+	menuFile->addAction(actNewSubWindow);
 	menuFile->addSeparator();
 	menuFile->addAction(actExit);
 	menuLanguages = menuBar()->addMenu(tr("&Languages"));
@@ -208,6 +220,7 @@ void MainWindow::onSelectStyle(STYLE style)
 
 void MainWindow::onShowHelp()
 {
+	qDebug() << "onShowHelp";
     DialogHelp dialogHelp;// = new Ui::Dialog(this);
     dialogHelp.exec();
 }
@@ -270,3 +283,10 @@ void MainWindow::print(QPrinter *printer)
 	painter.end();
 }
 
+void MainWindow::onNewSubWindow()
+{
+	//Здесь ничего не добавляется.
+	//Странно, но и не работает qDebug()
+	std::cout << "onNewSubWindow" << std::endl;
+	mdiArea->addSubWindow(new TNewTextEdit(this));
+}

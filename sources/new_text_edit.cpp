@@ -1,4 +1,5 @@
 #include <QTextEdit>
+#include <iostream>
 #include <QKeyEvent>
 #include <QContextMenuEvent>
 #include "new_text_edit.hpp"
@@ -6,6 +7,7 @@
 TNewTextEdit::TNewTextEdit(QWidget *parent):QTextEdit(parent)
 {
 
+	//std::cout << "Execute constructor of TNewTextEdit\n";
 }
 
 TNewTextEdit::~TNewTextEdit()
