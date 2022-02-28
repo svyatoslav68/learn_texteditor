@@ -1,0 +1,11 @@
+<RCC>
+    <qresource prefix="/help">
+        <file>help.txt</file>
+    </qresource>
+    <qresource prefix="/icons">
+		<file>format-justify-center.png</file>
+		<file>format-justify-fill.png</file>
+		<file>format-justify-left.png</file>
+		<file>format-justify-right.png</file>
+    </qresource>
+</RCC>
