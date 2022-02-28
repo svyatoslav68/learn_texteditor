@@ -37,8 +37,9 @@ void TNewTextEdit::keyPressEvent ( QKeyEvent * event )
 			event->accept();
 			break;
 		default:
-			QTextEdit::keyPressEvent(event);
+			;
 	}
+	QTextEdit::keyPressEvent(event);
 }
 
 

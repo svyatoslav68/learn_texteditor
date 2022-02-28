@@ -4,16 +4,28 @@
 **************************************************************/
 #include <QWidget>
 #include <QMainWindow>
+#include <QFontDatabase>
 #include <QMenu>
 #include <QMenuBar>
+#include <QToolBar>
 #include <QAction>
 #include <QActionGroup>
 #include <QMessageBox>
 #include <QTextEdit>
 #include <QPushButton>
+#include <QIcon>
+#include <QComboBox>
+//#include <QOverload>
 #include <QFile>
 #include <QTextStream>
+#include <QTextCursor>
 #include <QLayout>
+#include <QPainter>
+#include <QPrinter>
+#include <QPrintDialog>
+#include <QTextDocument>
+#include <QTextCharFormat>
+#include <QStringList>
 #include <QDebug>
 #include "version.hpp"
 #include "new_text_edit.hpp"
@@ -40,18 +52,22 @@ MainWindow::MainWindow()
 	textEditMain = new TNewTextEdit(this);
 	textEditMain->setObjectName("textEditMain");
 	connect(textEditMain, &TNewTextEdit::signalOpenFile, this, &MainWindow::onOpenFile);
-	connect(textEditMain, &TNewTextEdit::signalSaveFile, this, &MainWindow::onSaveFile);
+	connect(textEditMain, &TNewTextEdit::signalSaveFile, this, [this](){this->onSaveFile(false);});
 	mainLayout->addWidget(textEditMain);
 	mainLayout->addLayout(bottomLayout);
 	centralWidget = new QWidget(this);
 	centralWidget->setLayout(mainLayout);
+	setMinimumSize(600, 400);
 	setCentralWidget(centralWidget);
 	createActions();
 	createMenu();
+	createToolBar();
+	//currentCharFormat = new QTextCharFormat();
 }
 
 MainWindow::~MainWindow()
 {
+	//delete currentCharFormat;
 }
 
 void MainWindow::createActions()
@@ -62,13 +78,36 @@ void MainWindow::createActions()
 	actSave = new QAction(tr("&Save"), this);
 	actSave->setObjectName("actSave");
 	connect(actSave, &QAction::triggered, this, &MainWindow::onSaveFile);
+	actSaveFormatted = new QAction(tr("&Save formatted"), this);
+	actSaveFormatted->setObjectName("actSaveFormatted");
+	connect(actSaveFormatted, &QAction::triggered, this, [this](){this->onSaveFile(true);});
 	actReadOnly = new QAction(tr("Read only"), this);
 	actReadOnly->setObjectName("actReadOnly");
 	connect(actReadOnly, &QAction::triggered, this, &MainWindow::onReadOnly);
+	actPrint = new QAction(tr("&Print"), this);
+	actPrint->setObjectName("actPrint");
+	connect(actPrint, &QAction::triggered, this, &MainWindow::onPrintFile);
 	actExit = new QAction(tr("E&xit"), this);
 	actExit->setObjectName("actExit");
 	actExit->setShortcut(QKeySequence::Quit);
 	connect(actExit, &QAction::triggered, this, &QMainWindow::close);
+	grpJustify = new QActionGroup(this);
+	actJustifyLeft = new QAction(QIcon(":/icons/format-justify-left.png"), tr("Left"), this);
+	actJustifyLeft->setCheckable("true");
+	connect(actJustifyLeft, &QAction::triggered, this, &MainWindow::onSelectJustify);
+	actJustifyCenter = new QAction(QIcon(":/icons/format-justify-center.png"), tr("Center"), this);
+	actJustifyCenter->setCheckable("true");
+	connect(actJustifyCenter, &QAction::triggered, this, &MainWindow::onSelectJustify);
+	actJustifyRight = new QAction(QIcon(":/icons/format-justify-right.png"), tr("Right"), this);
+	actJustifyRight->setCheckable("true");
+	connect(actJustifyRight, &QAction::triggered, this, &MainWindow::onSelectJustify);
+	actJustifyFill = new QAction(QIcon(":/icons/format-justify-fill.png"), tr("Fill"), this);
+	actJustifyFill->setCheckable("true");
+	connect(actJustifyFill, &QAction::triggered, this, &MainWindow::onSelectJustify);
+	grpJustify->addAction(actJustifyLeft);
+	grpJustify->addAction(actJustifyCenter);
+	grpJustify->addAction(actJustifyRight);
+	grpJustify->addAction(actJustifyFill);
 	grpLanguages = new QActionGroup(this);
 	actEnglish = new QAction(tr("&English"));
 	actEnglish->setObjectName("actEnglish");
@@ -84,6 +123,12 @@ void MainWindow::createActions()
 	actViewDark = new QAction(tr("Dark style"));
 	actViewDark->setCheckable("true");
 	connect(actViewDark, &QAction::triggered, this, [this](){this->onSelectStyle(DARK);});
+	actCopyFormat = new QAction(tr("Copy format"));
+	actCopyFormat->setObjectName("actCopyFormat");
+	connect(actCopyFormat, &QAction::triggered, this, &MainWindow::onCopyFormat);
+	actSetFormat = new QAction(tr("Set format"));
+	actSetFormat->setObjectName("actSetFormat");
+	connect(actSetFormat, &QAction::triggered, this, [this](){this->textEditMain->setCurrentCharFormat(currentCharFormat);});
 	actViewLight = new QAction(tr("Light style"));
 	actViewLight->setCheckable("true");
 	actViewLight->setChecked("true");
@@ -107,15 +152,23 @@ void MainWindow::createMenu()
 	menuFile = menuBar()->addMenu(tr("&File"));
 	menuFile->addAction(actOpen);
 	menuFile->addAction(actSave);
+	menuFile->addAction(actSaveFormatted);
 	menuFile->addAction(actReadOnly);
+	menuFile->addAction(actPrint);
 	menuFile->addSeparator();
 	menuFile->addAction(actExit);
-	menuLanguages = menuBar()->addMenu(tr("&Languages"));
-	menuLanguages->addAction(actEnglish);
-	menuLanguages->addAction(actRussian);
+	menuFormatting = menuBar()->addMenu(tr("&Formatting"));
+	menuFormatting->addAction(actCopyFormat);
+	menuFormatting->addAction(actSetFormat);
+	menuTools = menuBar()->addMenu(tr("&Tools"));
+	menuTools->addAction(actEnglish);
+	menuTools->addAction(actRussian);
+	menuTools->addSeparator();
+	menuTools->addAction(actViewDark);
+	menuTools->addAction(actViewLight);
 	menuView = menuBar()->addMenu(tr("&View"));
-	menuView->addAction(actViewDark);
-	menuView->addAction(actViewLight);
+	menuView->addAction(actCopyFormat);
+	menuView->addAction(actSetFormat);
 	menuHelp = menuBar()->addMenu(tr("&Help"));
 	menuHelp->addAction(actHelp);
 	menuHelp->addSeparator();
@@ -160,7 +213,7 @@ void MainWindow::onOpenFile()
 	delete dialogOpenFile;
 }
 
-void MainWindow::onSaveFile()
+void MainWindow::onSaveFile(bool format)
 {
 	DialogFile *dialogOpenFile = new DialogFile(this);
 	if (dialogOpenFile->exec() == QDialog::Accepted)
@@ -172,7 +225,12 @@ void MainWindow::onSaveFile()
 			return;
 		}
 		QTextStream out(&file);
-		out << textEditMain->toPlainText();
+		if (format) {
+			out << textEditMain->toHtml();
+		}
+		else {
+			out << textEditMain->toPlainText();
+		}
 	}
 }
 
@@ -202,3 +260,124 @@ void MainWindow::onShowHelp()
     DialogHelp dialogHelp;// = new Ui::Dialog(this);
     dialogHelp.exec();
 }
+
+bool exportToPdf(QString &fileName, QTextDocument *document)
+{
+	return true;
+}
+
+void MainWindow::onPrintFile()
+{
+	QPrinter printer;
+	QPrintDialog dlg(&printer, this);
+	dlg.setWindowTitle("Print");
+	if (dlg.exec() != QDialog::Accepted)
+		return;
+	print(&printer);
+}
+
+void MainWindow::print(QPrinter *printer)
+{
+	QString printStr = textEditMain->toPlainText();
+    QChar *list = printStr.data();
+	QStringList strlst;
+	int line = 0, cursor = 0;
+	for (bool getst = true;getst;) {
+		int index = printStr.indexOf("\n", cursor); 
+		QString s = ""; 
+		if (index == -1) {
+			getst = false;
+			s.append(&list[cursor], printStr.length() - cursor);
+		}
+		else {
+			s.append(&list[cursor], index - cursor);
+		}
+        cursor = index + 1;
+        strlst << s;
+    }
+	QPainter painter;
+	painter.begin(printer);
+	int w = painter.window().width();
+	int h = painter.window().height();
+	int amount = strlst.count();
+	QFont font = painter.font();
+	QFontMetrics fmetrics(font);
+	for (int i = 0; i < amount; i++)
+	{
+       QPointF pf;
+       pf.setX(10);
+       pf.setY(line);
+       painter.drawText(pf, strlst.at(i));
+       line += fmetrics.height();
+       if (h - line <= fmetrics.height())
+       {
+           printer->newPage();
+           line = 0;
+       }
+	}
+	painter.end();
+}
+
+void MainWindow::createToolBar()
+{
+	toolBarFonts = addToolBar(tr("Fonts toolbar"));
+	QFontDatabase database;
+	comboBoxFontsSize = new QComboBox(this);
+	QStringList listSizes;
+	listSizes << "10" << "12" << "14" << "16";
+	comboBoxFontsSize->addItems(listSizes);
+	connect(comboBoxFontsSize, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index){this->onChangeFont();});
+	comboBoxFonts = new QComboBox(this);
+	comboBoxFonts->addItems(database.families());
+	connect(comboBoxFonts, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index){this->onChangeFont();});
+	//comboBoxFonts
+	toolBarFonts->addWidget(comboBoxFontsSize);
+	toolBarFonts->addWidget(comboBoxFonts);
+	toolBarJustify = addToolBar(tr("Justify toolbar"));
+	toolBarJustify->addAction(actJustifyLeft);
+	toolBarJustify->addAction(actJustifyCenter);
+	toolBarJustify->addAction(actJustifyRight);
+	toolBarJustify->addAction(actJustifyFill);
+}
+
+void MainWindow::onSelectJustify()
+{
+	QTextCursor selectedText = textEditMain->textCursor();
+	if (actJustifyLeft->isChecked()) {
+		//qDebug() << "actJustifyLeft";
+		textEditMain->setAlignment(Qt::AlignLeft);
+	}
+	else {
+		if (actJustifyRight->isChecked()) {
+			//qDebug() << "actJustifyRight";
+			textEditMain->setAlignment(Qt::AlignRight);
+		}
+		else {
+			if (actJustifyCenter->isChecked()) {
+				//qDebug() << "actJustifyCenter";
+				textEditMain->setAlignment(Qt::AlignHCenter);
+			}
+			else {
+				if (actJustifyFill->isChecked()) {
+					//qDebug() << "actJustifyFill";
+					textEditMain->setAlignment(Qt::AlignJustify);
+				}
+			}
+		}
+	}
+}
+
+void MainWindow::onChangeFont()
+{
+	//QTextCharFormat fmt;
+	currentCharFormat.setFontPointSize(comboBoxFontsSize->currentText().toInt());
+	currentCharFormat.setFontFamily(comboBoxFonts->currentText());
+	textEditMain->textCursor().setCharFormat(currentCharFormat);
+	textEditMain->setCurrentCharFormat(currentCharFormat);
+}
+
+void MainWindow::onCopyFormat()
+{
+	currentCharFormat = (textEditMain->textCursor().charFormat());
+}
+

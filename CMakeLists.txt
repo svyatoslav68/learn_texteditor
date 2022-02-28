@@ -32,17 +32,26 @@ list(APPEND CMAKE_MODULE_PATH $ENV{HOME}/cmake_modules)
 
 add_executable(${TARGET_APP} ${SOURCES} ${HEADERS} ${RESOURCES})
 
-find_package(Qt5 REQUIRED COMPONENTS Widgets Core Gui) 
+find_package(Qt6 COMPONENTS Widgets Core Gui PrintSupport) 
+find_package(Qt5 COMPONENTS Widgets Core Gui PrintSupport) 
 
 target_include_directories(${TARGET_APP} PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 target_include_directories(${TARGET_APP} PUBLIC ${HEADER_DIR})
 
-if(Qt5_FOUND)
-	message("Qt_LIBRARIES = " ${Qt5_LIBRARIES})
-	target_link_libraries(${TARGET_APP} Qt5::Widgets Qt5::Core Qt5::Gui)
+if(Qt6_FOUND)
+	message("Found Qt6 libraries")
+	message("Qt_LIBRARIES = " ${Qt6Widgets_LIBRARIES})
+	target_link_libraries(${TARGET_APP} Qt6::Widgets Qt6::Core Qt6::Gui Qt6::PrintSupport)
 else()
-	message("Не получится собрать приложение\n, не найден Qt5")
-	exit()
+	if(Qt5_FOUND)
+		message("Found Qt5 libraries")
+		message("Qt_LIBRARIES = " ${Qt5Widgets_LIBRARIES})
+		#	qt5_add_resources(SOURCES ${RESOURCES})
+		target_link_libraries(${TARGET_APP} Qt5::Widgets Qt5::Core Qt5::Gui Qt5::PrintSupport)
+	else()
+		message("Не получится собрать приложение\n, не найден Qt")
+		exit()
+	endif()
 endif()
 
 set_target_properties(
